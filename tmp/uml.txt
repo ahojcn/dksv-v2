@@ -1,0 +1,90 @@
+@startuml
+namespace dksv\\controllers {
+ class ContainerController {
+  beego.Controller
+} 
+}
+namespace dksv\\controllers {
+ class MainController {
+  beego.Controller
+} 
+}
+namespace dksv\\controllers {
+ class ClientConfig {
+  Host string
+  Port int64
+  Username string
+  Password string
+  Client *ssh.Client
+  LastResult string
+} 
+}
+namespace dksv\\controllers {
+ class ImageController {
+  beego.Controller
+} 
+}
+namespace dksv\\controllers {
+ class NetworkController {
+  beego.Controller
+} 
+}
+namespace dksv\\models {
+ class memLimit {
+  Limit string
+  Used string
+} 
+}
+namespace dksv\\models {
+ class ContainerResourceConfig {
+  MemoryLimit memLimit
+  CpuShare string
+  CpuSet string
+} 
+}
+namespace dksv\\models {
+ class ContainerInfo {
+  Pid string
+  Id string
+  Name string
+  Command string
+  CreateTime string
+  Status string
+  Volume string
+  PortMapping []string
+  Limits ContainerResourceConfig
+  Extra interface  { }
+} 
+}
+namespace dksv\\models {
+ class RESDATA {
+  Status int64
+  Msg string
+  Data interface  { }
+} 
+}
+namespace dksv\\models {
+ class ImageInfo {
+  Name string
+  Sys interface  { }
+  ModTime time.Time
+  Size int64
+} 
+}
+namespace dksv\\models {
+ class IpConfig {
+  IP string
+  Mask string
+} 
+}
+namespace dksv\\models {
+ class ContainerNetWorkConfig {
+  Name string
+  IpRange IpConfig
+  Driver string
+} 
+}
+dksv\\models.ContainerResourceConfig ---> dksv\\models.memLimit : MemoryLimit
+dksv\\models.ContainerInfo ---> dksv\\models.ContainerResourceConfig : Limits
+dksv\\models.ContainerNetWorkConfig ---> dksv\\models.IpConfig : IpRange
+@enduml
