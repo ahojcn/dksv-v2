@@ -1,19 +1,22 @@
 package controllers
 
 import (
-	"bufio"
 	"bytes"
+	"context"
 	"dksv-v2/models"
+	"encoding/json"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"testing"
-	"time"
 )
 
 // 测试查看文件
@@ -33,38 +36,74 @@ func TestImageController_List(t *testing.T) {
 
 // 测试从hub上,下载文件
 func TestImageController_Pull(t *testing.T) {
-	fileURL := "http://127.0.0.1:8080/media/psf/Home/Downloads/Python-3.7.5.tar.xz"
-	filePath := "./"
+	cli, _ := getMobyCliTest()
+	f, _ := cli.ImagePull(context.Background(), "python", types.ImagePullOptions{
+		All:           false,
+		RegistryAuth:  "",
+		PrivilegeFunc: nil,
+		Platform:      "",
+	})
+	logrus.Infof("%T", f)
 
-	fileName := path.Base(fileURL)
-	fmt.Println(fileName)
+	for {
+		p := make([]byte, 1024)
+		n, err := f.Read(p)
+		if n == 0 && err == io.EOF {
+			logrus.Info("ok!")
+			break
+		} else if err != nil {
+			// 报错
+		}
+	}
+}
 
-	res, err := http.Get(fileURL)
-	fmt.Println(res.Request)
+// 测试 push 镜像
+//func TestImageController_Push2(t *testing.T) {
+//	cli, _ := getMobyCliTest()
+//	f, _ := cli.ImagePush(context.Background(), "laughing_engelbart", types.ImagePushOptions{
+//		All:           false,
+//		RegistryAuth:  "",
+//		PrivilegeFunc: nil,
+//		Platform:      "",
+//	})
+//	logrus.Errorln(f, "push2")
+//
+//	for {
+//		p := make([]byte, 1024)
+//		n, err := f.Read(p)
+//		if n == 0 && err == io.EOF {
+//			logrus.Info("ok!", "push2")
+//			break
+//		} else if err != nil && err != io.EOF {
+//			// 报错
+//			logrus.Errorln("error", err)
+//		}
+//	}
+//}
+
+// 获取 moby cli
+func getMobyCliTest() (*client.Client, error) {
+	cli, err := client.NewClient("tcp://139.159.254.242:6060", "v1.40", nil, nil)
+
 	if err != nil {
-		fmt.Println("A error occurred!")
-		return
+		return nil, err
 	}
-	defer res.Body.Close()
-	// 获得 get 请求响应的reader对象
-	reader := bufio.NewReaderSize(res.Body, 32*1024)
-	file, err := os.Create(filePath + fileName)
-	if err != nil {
-		fmt.Println(err)
-	}
-	// 获得文件的writer对象
-	writer := bufio.NewWriter(file)
-	written, _ := io.Copy(writer, reader)
-	fmt.Printf("Total length: %d\n", written)
+	return cli, err
 }
 
 func TestImageController_Push(t *testing.T) {
+	_, err := os.Open("/Users/ahojcn/plantumlsss.jar")
+	logrus.Errorln(err)
 
-	//UploadFile("http://tim.natapp1.cc/images/upload", map[string]string{}, "", "", )
+	resp, err := UploadFileTest("http://tim.natapp1.cc/images/upload", map[string]string{}, "file", "plantuml.jar", f)
+	logrus.Infoln(json.Unmarshal(resp, ), err)
 }
-func UploadFile(url string, params map[string]string, nameField, fileName string, file io.Reader) ([]byte, error) {
+func UploadFileTest(url string, params map[string]string, nameField, fileName string, file io.Reader) ([]byte, error) {
 	HttpClient := &http.Client{
-		Timeout: 3 * time.Second,
+		Transport:     nil,
+		CheckRedirect: nil,
+		Jar:           nil,
+		Timeout:       0,
 	}
 
 	body := new(bytes.Buffer)
@@ -108,4 +147,20 @@ func UploadFile(url string, params map[string]string, nameField, fileName string
 		return nil, err
 	}
 	return content, nil
+}
+
+func TestImageController_Search(t *testing.T) {
+	cli, _ := client.NewClient("tcp://139.159.254.242:6060", "v1.40", nil, nil)
+
+	res, err := cli.ImageSearch(context.Background(), "python", types.ImageSearchOptions{
+		RegistryAuth:  "",
+		PrivilegeFunc: nil,
+		Filters:       filters.Args{},
+		Limit:         10,
+	})
+
+	logrus.Infoln("res", res)
+	logrus.Errorln("err", err)
+
+	//cli.ImagePull(context.Background(), "python")
 }

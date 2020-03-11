@@ -1,13 +1,17 @@
 package controllers
 
 import (
-	"bufio"
+	"bytes"
+	"context"
 	"dksv-v2/models"
 	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strings"
@@ -24,44 +28,52 @@ func (this *ImageController) Pull() {
 		Msg:    "success",
 		Data:   nil,
 	}
-
 	// 解析参数
 	type imagePullForm struct {
-		ImageUrl  string `json:"image_url"`
 		ImageName string `json:"image_name"`
 	}
 	req := imagePullForm{}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+	_ = json.Unmarshal(this.Ctx.Input.RequestBody, &req)
 
-	// 从 image_url 下载文件到本地镜像存储路径
-	fileURL := req.ImageUrl
-	filePath := models.RootUrl
-
-	res, err := http.Get(fileURL)
-	if err != nil || res.Status != "200 OK" {
-		data.Status = -1
-		data.Msg = fmt.Sprintf("文件地址错误:%v", err)
-		this.Data["json"] = data
-		this.ServeJSON()
-		return
-	}
-	defer res.Body.Close()
-
-	// 获得 get 请求响应的reader对象
-	reader := bufio.NewReaderSize(res.Body, 32*1024)
-	file, err := os.Create(filePath + req.ImageName + ".tar")
+	cli, err := getMobyCli()
 	if err != nil {
 		data.Status = -1
-		data.Msg = fmt.Sprintf("创建本地镜像文件错误:%v", err)
+		data.Msg = fmt.Sprintf("网络错误:%v", err)
 		this.Data["json"] = data
 		this.ServeJSON()
 		return
 	}
-	// 获得文件的writer对象
-	writer := bufio.NewWriter(file)
-	io.Copy(writer, reader)
+	f, err := cli.ImagePull(context.Background(), req.ImageName, types.ImagePullOptions{
+		All:           false,
+		RegistryAuth:  "",
+		PrivilegeFunc: nil,
+		Platform:      "",
+	})
+	defer f.Close()
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("拉取镜像错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
 
-	this.Data["json"] = getImageInfoByName(req.ImageName)
+	for {
+		p := make([]byte, 1024)
+		n, err := f.Read(p)
+		if n == 0 && err == io.EOF {
+			data.Msg = "拉取镜像成功"
+			data.Status = 0
+			break
+		} else if err != nil && err != io.EOF {
+			// 报错
+			data.Msg = fmt.Sprintf("拉取镜像失败:%v", err)
+			data.Status = -1
+			break
+		}
+	}
+
+	this.Data["json"] = data
 	this.ServeJSON()
 }
 
@@ -73,7 +85,28 @@ func (this *ImageController) List() {
 		Data:   nil,
 	}
 
-	data.Data = *getAllImageInfo()
+	cli, err := getMobyCli()
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("网络错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	images, err := cli.ImageList(context.Background(), types.ImageListOptions{
+		All:     true,
+		Filters: filters.Args{},
+	})
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("获取镜像列表失败:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	data.Data = images
 
 	this.Data["json"] = data
 	this.ServeJSON()
@@ -89,31 +122,67 @@ func (this *ImageController) Remove() {
 	// 解析参数
 	type imageRemoveForm struct {
 		ImageName string `json:"image_name"`
+		Force bool `json:"force"`
 	}
 	req := imageRemoveForm{}
 	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
 
-	imageName := models.RootUrl + req.ImageName + ".tar"
-	err := os.Remove(imageName)
-	// 删除文件失败
+	cli, err := getMobyCli()
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("网络错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	_, err = cli.ImageRemove(context.Background(), req.ImageName, types.ImageRemoveOptions{
+		Force:         req.Force,
+		PruneChildren: false,
+	})
 	if err != nil {
 		data.Status = -1
 		data.Msg = fmt.Sprintf("删除镜像失败:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
 	}
+
+	data.Msg = "删除成功"
 
 	this.Data["json"] = data
 	this.ServeJSON()
 }
 
 // 将本机镜像推送到服务器
-// todo
 func (this *ImageController) Push() {
 	data := models.RESDATA{
 		Status: 0,
 		Msg:    "success",
 		Data:   nil,
 	}
-	// todo 将本机镜像推送到服务器
+	// 解析参数
+	type imagePushForm struct {
+		ImageName string `json:"image_name"`
+		Url string `json:"url"`
+	}
+	req := imagePushForm{}
+	_ = json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+
+	// 打开文件
+	f, err := os.Open(fmt.Sprintf("%s/%s", models.RootUrl, req.ImageName))
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("没有此镜像文件信息:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+	defer f.Close()
+
+	resp, err := uploadFile(req.Url, map[string]string{}, "file", req.ImageName, f)
+	data.Data = resp
+
 	this.Data["json"] = data
 	this.ServeJSON()
 }
@@ -160,4 +229,56 @@ func getImageInfo(f os.FileInfo) *models.ImageInfo {
 		ModTime: f.ModTime(),
 		Size:    f.Size(),
 	}
+}
+
+// 上传 image.tar 到镜像管理服务器
+func uploadFile(url string, params map[string]string, nameField, fileName string, file io.Reader) ([]byte, error) {
+	HttpClient := &http.Client{
+		Transport:     nil,
+		CheckRedirect: nil,
+		Jar:           nil,
+		Timeout:       0,
+	}
+
+	body := new(bytes.Buffer)
+
+	writer := multipart.NewWriter(body)
+
+	formFile, err := writer.CreateFormFile(nameField, fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = io.Copy(formFile, file)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, val := range params {
+		_ = writer.WriteField(key, val)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	//req.Header.Set("Content-Type","multipart/form-data")
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+
+	resp, err := HttpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
 }
