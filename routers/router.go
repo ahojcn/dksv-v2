@@ -15,6 +15,8 @@ import (
 func init() {
 	beego.Router("/api/test/", &controllers.MainController{})
 
+	beego.Router("/api/host/info/", &controllers.MainController{}, "get:SysInfo")
+
 	// 容器操作
 	beego.Router("/api/container/create/", &controllers.ContainerController{}, "post:Create")
 	beego.Router("/api/container/start/", &controllers.ContainerController{}, "post:Start")
@@ -29,6 +31,8 @@ func init() {
 	beego.Router("/api/image/list/", &controllers.ImageController{}, "get:List")
 	beego.Router("/api/image/pull/", &controllers.ImageController{}, "post:Pull")
 	beego.Router("/api/image/remove/", &controllers.ImageController{}, "post:Remove")
+	beego.Router("/api/image/push/", &controllers.ImageController{}, "post:Push")
+	beego.Router("/api/image/tag/", &controllers.ImageController{}, "post:Tag")
 
 	// 网络操作
 	beego.Router("/api/network/create/", &controllers.NetworkController{}, "post:Create")

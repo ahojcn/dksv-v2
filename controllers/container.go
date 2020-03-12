@@ -13,6 +13,8 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/docker"
 	"os"
 	"os/exec"
 	"time"
@@ -231,7 +233,7 @@ func (this *ContainerController) Remove() {
 		Force         bool   `json:"force"` // -f
 	}
 	req := containerRemoveForm{}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+	_ = json.Unmarshal(this.Ctx.Input.RequestBody, &req)
 
 	cli, err := getMobyCli()
 	if err != nil {
@@ -276,6 +278,11 @@ func (this *ContainerController) List() {
 		this.ServeJSON()
 		return
 	}
+	type myContainers struct {
+		Container types.Container      `json:"container"`
+		MemInfo   *docker.CgroupMemStat `json:"mem_info"`
+		CpuInfo   *cpu.TimesStat       `json:"cpu_info"`
+	}
 
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
 		Quiet:   false,
@@ -294,7 +301,15 @@ func (this *ContainerController) List() {
 		this.ServeJSON()
 		return
 	}
-	data.Data = containers
+
+	d := make([]myContainers, len(containers))
+	for i := range containers {
+		d[i].Container = containers[i]
+		d[i].CpuInfo, _ = docker.CgroupCPUDocker(containers[i].ID)
+		d[i].MemInfo, _ = docker.CgroupMemDocker(containers[i].ID)
+	}
+
+	data.Data = d
 
 	this.Data["json"] = data
 	this.ServeJSON()

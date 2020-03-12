@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"dksv-v2/models"
-	"encoding/json"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
@@ -58,28 +57,59 @@ func TestImageController_Pull(t *testing.T) {
 }
 
 // 测试 push 镜像
-//func TestImageController_Push2(t *testing.T) {
-//	cli, _ := getMobyCliTest()
-//	f, _ := cli.ImagePush(context.Background(), "laughing_engelbart", types.ImagePushOptions{
-//		All:           false,
-//		RegistryAuth:  "",
-//		PrivilegeFunc: nil,
-//		Platform:      "",
-//	})
-//	logrus.Errorln(f, "push2")
-//
-//	for {
-//		p := make([]byte, 1024)
-//		n, err := f.Read(p)
-//		if n == 0 && err == io.EOF {
-//			logrus.Info("ok!", "push2")
-//			break
-//		} else if err != nil && err != io.EOF {
-//			// 报错
-//			logrus.Errorln("error", err)
-//		}
-//	}
-//}
+func TestImageController_Push2(t *testing.T) {
+	//cli, _ := getMobyCliTest()
+	//
+	//_ = cli.ImageTag(context.Background(), "", "")
+	//f, _ := cli.ImagePush(context.Background(), "laughing_engelbart", types.ImagePushOptions{
+	//	All:           true,
+	//	RegistryAuth:  "",
+	//	PrivilegeFunc: nil,
+	//	Platform:      "",
+	//})
+	//logrus.Errorln(f, "push2")
+	//
+	//for {
+	//	p := make([]byte, 1024)
+	//	n, err := f.Read(p)
+	//	if n == 0 && err == io.EOF {
+	//		logrus.Info("ok!", "push2")
+	//		break
+	//	} else if err != nil && err != io.EOF {
+	//		// 报错
+	//		logrus.Errorln("error", err)
+	//	}
+	//}
+
+
+	cli, _ := getMobyCliTest()
+	f, err := cli.ImagePush(context.Background(), "139.159.254.242:5000/myngx:0.2", types.ImagePushOptions{
+		All:           true,
+		RegistryAuth:  "139.159.254.242:5000",
+		PrivilegeFunc: nil,
+		Platform:      "",
+	})
+	logrus.Warnln(err)
+
+	for {
+		buf := make([]byte, 1024)
+		n, err := f.Read(buf)
+		if n == 0 && err == io.EOF {
+			logrus.Info("push ok!")
+			break
+		} else if err != nil && err != io.EOF {
+			// 报错
+			logrus.Errorln("error", err)
+		}
+	}
+}
+
+func TestImageController_Tag(t *testing.T) {
+	cli, _ := getMobyCliTest()
+	// docker tag nginx 139.159.254.242:5000/nginx
+	err := cli.ImageTag(context.Background(), "nginx", "139.159.254.242:5000/myngx:0.2")
+	logrus.Infoln(err)
+}
 
 // 获取 moby cli
 func getMobyCliTest() (*client.Client, error) {
@@ -95,8 +125,8 @@ func TestImageController_Push(t *testing.T) {
 	_, err := os.Open("/Users/ahojcn/plantumlsss.jar")
 	logrus.Errorln(err)
 
-	resp, err := UploadFileTest("http://tim.natapp1.cc/images/upload", map[string]string{}, "file", "plantuml.jar", f)
-	logrus.Infoln(json.Unmarshal(resp, ), err)
+	//resp, err := UploadFileTest("http://tim.natapp1.cc/images/upload", map[string]string{}, "file", "plantuml.jar", f)
+	//logrus.Infoln(json.Unmarshal(resp, ), err)
 }
 func UploadFileTest(url string, params map[string]string, nameField, fileName string, file io.Reader) ([]byte, error) {
 	HttpClient := &http.Client{
