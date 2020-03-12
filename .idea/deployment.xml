@@ -2,6 +2,13 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="HuaweiCloud">
     <serverData>
+      <paths name="Aliyun">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/root/dksv-v2-bin" local="$PROJECT_DIR$/bin" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="HuaweiCloud">
         <serverdata>
           <mappings>

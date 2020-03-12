@@ -6,13 +6,15 @@ DARWIN_X86_32="dksv2.0.darwin-386"
 WIN_X86_64="dksv2.0.win-amd64.exe"
 WIN_X86_32="dksv2.0.win-386.exe"
 
-SERVER_ROOT_URL="http://139.159.254.242:8080/root/go/src/dksv-v2/bin/"
+SERVER_ROOT_URL="http://47.103.14.73:2076/"
 ROOT_PATH="/root/bin/"
 
 SYSNAME=`uname -s`
 SYSLONG=`uname -m`
 
 echo "${1}" > "ip.txt"  # 保存 ip
+echo "${2}" > "apiversion.txt"  # 保存 api 版本
+echo "${3}" > "port.txt"  # 保存 api 端口
 
 mkdir ${ROOT_PATH} -p
 
