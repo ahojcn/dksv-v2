@@ -20,7 +20,6 @@ func main() {
 	}
 
 	go func() {
-		logrus.Infoln("连接控制中心...")
 		file, err := os.Open("ip.txt")
 		if err != nil {
 			logrus.Panicf("读取 ip 文件错误:%v!", err)
@@ -38,7 +37,6 @@ func main() {
 	//////////////////////////////////////////////////////////////////////
 	// 获取 api 的 port 和 version
 	go func() {
-		logrus.Infoln("获取 api 版本...")
 		file, err := os.Open("apiversion.txt")
 		if err != nil {
 			logrus.Panicf("获取版本失败:%v!", err)
@@ -50,7 +48,6 @@ func main() {
 		controllers.AC.Version = string(version)
 		logrus.Infoln("版本:", string(version))
 
-		logrus.Infoln("获取 api 端口...")
 		file, err = os.Open("port.txt")
 		if err != nil {
 			logrus.Panicf("获取端口失败:%v!", err)
@@ -62,13 +59,12 @@ func main() {
 		controllers.AC.Port = string(port)
 		logrus.Infoln("端口:", string(port))
 
-		logrus.Infoln("my-docker api 状态检测...")
 		cmd := exec.Command("curl", fmt.Sprintf("127.0.0.1:%s/info", port))
 		err = cmd.Run()
 		if err != nil {
-			logrus.Panicf("my-docker api 存活检测失败:%v!", err)
+			logrus.Panicf("api 存活检测失败:%v!", err)
 		}
-		logrus.Infoln("my-docker api 存活!")
+		logrus.Infoln("api 存活!")
 	}()
 	//////////////////////////////////////////////////////////////////////
 
