@@ -6,22 +6,23 @@ DARWIN_X86_32="dksv2.0.darwin-386"
 WIN_X86_64="dksv2.0.win-amd64.exe"
 WIN_X86_32="dksv2.0.win-386.exe"
 
-SERVER_ROOT_URL="http://47.103.14.73:2076/"
+SERVER_ROOT_URL="https://ahojcn.gitee.io/"
 ROOT_PATH="/root/bin/"
 
 SYSNAME=`uname -s`
 SYSLONG=`uname -m`
 
+mkdir ${ROOT_PATH} -p
+cd ${ROOT_PATH}
+
 echo "${1}" > "ip.txt"  # 保存 ip
 echo "${2}" > "apiversion.txt"  # 保存 api 版本
 echo "${3}" > "port.txt"  # 保存 api 端口
 
-mkdir ${ROOT_PATH} -p
-
 function downloadDksv() {
-  curl "${SERVER_ROOT_URL}${1}" --output "${ROOT_PATH}${1}"
-  chmod +x ${ROOT_PATH}"${1}"
-  nohup ${ROOT_PATH}"${1}" &
+  curl "${SERVER_ROOT_URL}${1}" --output "${1}"
+  chmod +x "${1}"
+  nohup "${1}" &
 }
 
 if [ ${SYSNAME} == "Linux" ]; then

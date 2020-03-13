@@ -13,4 +13,11 @@ echo "build for darwin: 386 amd64"
 CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o ${BINPATH}dksv2.0.darwin-386
 CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o ${BINPATH}dksv2.0.darwin-amd64
 
-echo "done."
+echo "go build done, push ${BINPATH} to gitee"
+
+cd ${BINPATH} && cp ../deploy.sh ./
+
+git status
+git add .
+git commit -m "$(date "+%Y-%m-%d %H:%M:%S")"
+git push origin master
