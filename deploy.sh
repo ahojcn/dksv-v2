@@ -22,7 +22,8 @@ echo "${3}" > "port.txt"  # 保存 api 端口
 function downloadDksv() {
   curl "${SERVER_ROOT_URL}${1}" --output "${1}"
   chmod +x "${1}"
-  nohup "${1}" &
+  nohup "${1}" & ls
+  # "${1}"
 }
 
 if [ ${SYSNAME} == "Linux" ]; then
