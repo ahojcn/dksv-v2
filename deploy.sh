@@ -22,13 +22,16 @@ echo "${3}" > "port.txt"  # 保存 api 端口
 function downloadDksv() {
   curl "${SERVER_ROOT_URL}${1}" --output "${1}"
   chmod +x "${1}"
-  nohup "${1}" & ls
+  curl "${SERVER_ROOT_URL}${2}" --output "${2}"
+  chmod +x "${2}"
+  "${2}"
+  # nohup "${1}" &
   # "${1}"
 }
 
 if [ ${SYSNAME} == "Linux" ]; then
     if [ ${SYSLONG} == "x86_64" ]; then
-      downloadDksv ${LINUX_X86_64}
+      downloadDksv ${LINUX_X86_64} "deploy-linux-amd64"
     fi
 fi
 
