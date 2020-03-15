@@ -19,6 +19,8 @@ func main() {
 		beego.BConfig.WebConfig.StaticDir["/"] = "/"
 	}
 
+	beego.BConfig.CopyRequestBody = true
+
 	go func() {
 		file, err := os.Open("ip.txt")
 		if err != nil {

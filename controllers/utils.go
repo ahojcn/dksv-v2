@@ -6,7 +6,7 @@ import (
 )
 
 type ApiConfig struct {
-	Port string `json:"port"`
+	Port    string `json:"port"`
 	Version string `json:"version"`
 }
 

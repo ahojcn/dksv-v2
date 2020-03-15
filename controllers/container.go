@@ -37,18 +37,22 @@ func (this *ContainerController) Create() {
 		ContainerVolume string `json:"container_volume"`
 	}
 	type containerCreateForm struct {
-		ImageName          string `json:"image_name"`
-		Volumes            []v    `json:"volumes"`
-		WorkingDir         string `json:"working_dir"`          // 工作路径
-		ContainerName      string `json:"container_name"`       // 不起名字就可以填 ""
-		ContainerPortProto string `json:"container_port_proto"` // 容器端口协议 tcp / udp
-		ContainerPort      string `json:"container_port"`       // 端口 80
-		HostPort           string `json:"host_port"`            // 主机端口
-		CPUShares          int64  `json:"cpu_shares"`           // CPUShares 默认 1024
-		Memory             int64  `json:"memory"`               // 内存限制 bytes
+		ImageName          string   `json:"image_name"`
+		WorkingDir         string   `json:"working_dir"`          // 工作路径
+		ContainerName      string   `json:"container_name"`       // 不起名字就可以填 ""
+		ContainerPortProto string   `json:"container_port_proto"` // 容器端口协议 tcp / udp
+		ContainerPort      string   `json:"container_port"`       // 端口 80
+		HostPort           string   `json:"host_port"`            // 主机端口
+		CPUShares          int64    `json:"cpu_shares"`           // CPUShares 默认 1024
+		Memory             int64    `json:"memory"`               // 内存限制 bytes
+		Cmd                []string `json:"cmd"`                  // run 时候执行的命令
+		Volumes            []v      `json:"volumes"`
 	}
 	req := containerCreateForm{}
 	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+
+	logrus.Infoln("request body:", this.Ctx.Input.RequestBody)
+	logrus.Infoln("Cmd: ", req)
 
 	cli, err := getMobyCli()
 	if err != nil {
@@ -63,8 +67,12 @@ func (this *ContainerController) Create() {
 	//port, _ := nat.NewPort("tcp", "80")
 	port, _ := nat.NewPort(req.ContainerPortProto, req.ContainerPort)
 	exports[port] = struct{}{}
+
+	//c := make([]string, 0)
+	//c = append(c, req.Cmd)
 	config := &container.Config{
 		ExposedPorts: exports,
+		Cmd:          req.Cmd,
 		Image:        req.ImageName,
 	}
 
@@ -77,10 +85,11 @@ func (this *ContainerController) Create() {
 	mnt := make([]mount.Mount, 0)
 	for index := range req.Volumes {
 		mnt = append(mnt, mount.Mount{
-			Type:   mount.TypeVolume,
+			Type:   mount.TypeBind,   /// 注意这里的类型
 			Source: req.Volumes[index].HostVolume,
 			Target: req.Volumes[index].ContainerVolume,
 		})
+		logrus.Errorln([]byte(req.Volumes[index].HostVolume))
 	}
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
@@ -114,10 +123,10 @@ func (this *ContainerController) Start() {
 		Msg:    "success",
 		Data:   nil,
 	}
-	type containerCreateForm struct {
+	type containerStartForm struct {
 		ContainerName string `json:"container_name"`
 	}
-	req := containerCreateForm{}
+	req := containerStartForm{}
 	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
 
 	cli, err := getMobyCli()
@@ -193,7 +202,13 @@ func (this *ContainerController) Stop() {
 		TimeOut       int64  `json:"time_out"`
 	}
 	req := containerStopForm{}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+	//this.Ctx.Input.CopyBody()
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+
+	logrus.Errorln("stop json.unmarshal err:", err)
+	logrus.Infoln("stop() req:", req)
+
+	logrus.Warnln("get string:", this.GetString("container_name"))
 
 	cli, err := getMobyCli()
 	if err != nil {
@@ -279,9 +294,9 @@ func (this *ContainerController) List() {
 		return
 	}
 	type myContainers struct {
-		Container types.Container      `json:"container"`
+		Container types.Container       `json:"container"`
 		MemInfo   *docker.CgroupMemStat `json:"mem_info"`
-		CpuInfo   *cpu.TimesStat       `json:"cpu_info"`
+		CpuInfo   *cpu.TimesStat        `json:"cpu_info"`
 	}
 
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
