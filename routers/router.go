@@ -38,4 +38,7 @@ func init() {
 	beego.Router("/api/network/create/", &controllers.NetworkController{}, "post:Create")
 	beego.Router("/api/network/list/", &controllers.NetworkController{}, "get:List")
 	beego.Router("/api/network/remove/", &controllers.NetworkController{}, "post:Remove")
+
+	// 宿主机操作
+	beego.Router("/api/host/list/files/", &controllers.HostController{}, "get:ListFiles")
 }
