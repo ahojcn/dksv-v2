@@ -40,5 +40,6 @@ func init() {
 	beego.Router("/api/network/remove/", &controllers.NetworkController{}, "post:Remove")
 
 	// 宿主机操作
-	beego.Router("/api/host/list/files/", &controllers.HostController{}, "get:ListFiles")
+	beego.Router("/api/host/listFiles/", &controllers.HostController{}, "get:ListFiles")
+	beego.Router("/api/host/uploadFile/", &controllers.HostController{}, "post:UploadFile")
 }
