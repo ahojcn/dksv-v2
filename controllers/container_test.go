@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"bufio"
+	"context"
 	"dksv-v2/models"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -77,4 +79,16 @@ func Test003(t *testing.T) {
 	cmd := exec.Command(models.MyDockerBinPath, "stop", "brid")
 	res, _ := cmd.CombinedOutput()
 	fmt.Println(string(res))
+}
+
+func Test004(t *testing.T) {
+	cli, _ := getMobyCli()
+	cli.ContainerCommit(context.Background(), "container", types.ContainerCommitOptions{
+		Reference: "",
+		Comment:   "",
+		Author:    "",
+		Changes:   nil,
+		Pause:     false,
+		Config:    nil,
+	})
 }

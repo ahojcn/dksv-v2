@@ -85,7 +85,7 @@ func (this *ContainerController) Create() {
 	mnt := make([]mount.Mount, 0)
 	for index := range req.Volumes {
 		mnt = append(mnt, mount.Mount{
-			Type:   mount.TypeBind,   /// 注意这里的类型
+			Type:   mount.TypeBind, /// 注意这里的类型
 			Source: req.Volumes[index].HostVolume,
 			Target: req.Volumes[index].ContainerVolume,
 		})
@@ -417,6 +417,57 @@ func (this *ContainerController) Export() {
 	}
 
 	data.Msg = "导出成功"
+	this.Data["json"] = data
+	this.ServeJSON()
+}
+
+func (this *ContainerController) Commit() {
+	data := models.RESDATA{
+		Status: 0,
+		Msg:    "success",
+		Data:   nil,
+	}
+	// 解析参数
+	type containerCommitForm struct {
+		ContainerName string `json:"container_name"`
+		Ref string `json:"ref"`
+	}
+	req := containerCommitForm{}
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &req)
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("解析参数错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	cli, err := getMobyCli()
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("未知错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	id, err := cli.ContainerCommit(context.Background(), req.ContainerName, types.ContainerCommitOptions{
+		Reference: req.Ref,
+		Comment:   "",
+		Author:    "",
+		Changes:   nil,
+		Pause:     false,
+		Config:    nil,
+	})
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("未知错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	data.Data = id
 	this.Data["json"] = data
 	this.ServeJSON()
 }
