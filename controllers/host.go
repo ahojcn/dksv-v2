@@ -136,9 +136,7 @@ func (this *HostController) UnusedPortList() {
 		if CheckPort(i) != true {
 			ports = append(ports, i)
 		}
-		logrus.Println(i)
 	}
-	logrus.Println(ports)
 
 	data.Data = ports
 	this.Data["json"] = data
@@ -146,7 +144,7 @@ func (this *HostController) UnusedPortList() {
 }
 
 func CheckPort(port int) bool {
-	checkStatement := fmt.Sprintf("lsof -i:%d ", port)
+	checkStatement := fmt.Sprintf("lsof -i:%d", port)
 	output, _ := exec.Command("sh", "-c", checkStatement).CombinedOutput()
 	if len(output) > 0 {
 		return true
