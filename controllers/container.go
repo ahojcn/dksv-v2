@@ -451,6 +451,7 @@ func (this *ContainerController) Commit() {
 		return
 	}
 
+	logrus.Warningln("ContainerName:", req.ContainerName, "Ref:", req.Ref)
 	id, err := cli.ContainerCommit(context.Background(), req.ContainerName, types.ContainerCommitOptions{
 		Reference: req.Ref,
 		Comment:   "",

@@ -7,6 +7,7 @@ import (
 	"github.com/astaxie/beego"
 	"io/ioutil"
 	"os"
+	"os/exec"
 )
 
 type HostController struct {
@@ -120,4 +121,35 @@ func (this *HostController) UploadFile() {
 	data.Msg = "上传成功"
 	this.Data["json"] = data
 	this.ServeJSON()
+}
+
+// 寻找本机可用端口
+func (this *HostController) UnusedPortList() {
+	data := models.RESDATA{
+		Status: 0,
+		Msg:    "success",
+		Data:   nil,
+	}
+
+	ports := make([]int, 0)
+	for i := 10000; i < 10100; i++ {
+		if CheckPort(i) != true {
+			ports = append(ports, i)
+		}
+		logrus.Println(i)
+	}
+	logrus.Println(ports)
+
+	data.Data = ports
+	this.Data["json"] = data
+	this.ServeJSON()
+}
+
+func CheckPort(port int) bool {
+	checkStatement := fmt.Sprintf("lsof -i:%d ", port)
+	output, _ := exec.Command("sh", "-c", checkStatement).CombinedOutput()
+	if len(output) > 0 {
+		return true
+	}
+	return false
 }

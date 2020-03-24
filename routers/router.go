@@ -43,4 +43,5 @@ func init() {
 	// 宿主机操作
 	beego.Router("/api/host/listFiles/", &controllers.HostController{}, "get:ListFiles")
 	beego.Router("/api/host/uploadFile/", &controllers.HostController{}, "post:UploadFile")
+	beego.Router("/api/host/ports/", &controllers.HostController{}, "get:UnusedPortList")
 }
