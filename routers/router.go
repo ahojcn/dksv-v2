@@ -27,6 +27,7 @@ func init() {
 	beego.Router("/api/container/logs/", &controllers.ContainerController{}, "get:Logs")
 	beego.Router("/api/container/export/", &controllers.ContainerController{}, "post:Export")
 	beego.Router("/api/container/commit/", &controllers.ContainerController{}, "post:Commit")
+	beego.Router("/api/container/stat/", &controllers.ContainerController{}, "get:Stat")
 
 	// 镜像操作
 	beego.Router("/api/image/list/", &controllers.ImageController{}, "get:List")

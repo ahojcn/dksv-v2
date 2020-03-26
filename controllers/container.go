@@ -15,6 +15,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/docker"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
@@ -185,6 +186,147 @@ func (this *ContainerController) Inspect() {
 	}
 
 	data.Data = info
+	this.Data["json"] = data
+	this.ServeJSON()
+}
+
+// 获取容器 stat 信息
+func (this *ContainerController) Stat() {
+	data := models.RESDATA{
+		Status: 0,
+		Msg:    "success",
+		Data:   nil,
+	}
+	// 解析参数
+	containerName := this.GetString("container_name")
+
+	cli, err := getMobyCli()
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("网络错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	stats, err := cli.ContainerStats(context.Background(), containerName, false)
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("未知错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	b, err := ioutil.ReadAll(stats.Body)
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("转换错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
+
+	type MyJsonName struct {
+		BlkioStats struct{} `json:"blkio_stats"`
+		CPUStats   struct {
+			CPUUsage struct {
+				PercpuUsage       []int64 `json:"percpu_usage"`
+				TotalUsage        int64   `json:"total_usage"`
+				UsageInKernelmode int64   `json:"usage_in_kernelmode"`
+				UsageInUsermode   int64   `json:"usage_in_usermode"`
+			} `json:"cpu_usage"`
+			OnlineCpus     int64 `json:"online_cpus"`
+			SystemCPUUsage int64 `json:"system_cpu_usage"`
+			ThrottlingData struct {
+				Periods          int64 `json:"periods"`
+				ThrottledPeriods int64 `json:"throttled_periods"`
+				ThrottledTime    int64 `json:"throttled_time"`
+			} `json:"throttling_data"`
+		} `json:"cpu_stats"`
+		MemoryStats struct {
+			Failcnt  int64 `json:"failcnt"`
+			Limit    int64 `json:"limit"`
+			MaxUsage int64 `json:"max_usage"`
+			Stats    struct {
+				ActiveAnon              int64 `json:"active_anon"`
+				ActiveFile              int64 `json:"active_file"`
+				Cache                   int64 `json:"cache"`
+				HierarchicalMemoryLimit int64 `json:"hierarchical_memory_limit"`
+				InactiveAnon            int64 `json:"inactive_anon"`
+				InactiveFile            int64 `json:"inactive_file"`
+				MappedFile              int64 `json:"mapped_file"`
+				Pgfault                 int64 `json:"pgfault"`
+				Pgmajfault              int64 `json:"pgmajfault"`
+				Pgpgin                  int64 `json:"pgpgin"`
+				Pgpgout                 int64 `json:"pgpgout"`
+				Rss                     int64 `json:"rss"`
+				RssHuge                 int64 `json:"rss_huge"`
+				TotalActiveAnon         int64 `json:"total_active_anon"`
+				TotalActiveFile         int64 `json:"total_active_file"`
+				TotalCache              int64 `json:"total_cache"`
+				TotalInactiveAnon       int64 `json:"total_inactive_anon"`
+				TotalInactiveFile       int64 `json:"total_inactive_file"`
+				TotalMappedFile         int64 `json:"total_mapped_file"`
+				TotalPgfault            int64 `json:"total_pgfault"`
+				TotalPgmajfault         int64 `json:"total_pgmajfault"`
+				TotalPgpgin             int64 `json:"total_pgpgin"`
+				TotalPgpgout            int64 `json:"total_pgpgout"`
+				TotalRss                int64 `json:"total_rss"`
+				TotalRssHuge            int64 `json:"total_rss_huge"`
+				TotalUnevictable        int64 `json:"total_unevictable"`
+				TotalWriteback          int64 `json:"total_writeback"`
+				Unevictable             int64 `json:"unevictable"`
+				Writeback               int64 `json:"writeback"`
+			} `json:"stats"`
+			Usage int64 `json:"usage"`
+		} `json:"memory_stats"`
+		Networks struct {
+			Eth0 struct {
+				RxBytes   int64 `json:"rx_bytes"`
+				RxDropped int64 `json:"rx_dropped"`
+				RxErrors  int64 `json:"rx_errors"`
+				RxPackets int64 `json:"rx_packets"`
+				TxBytes   int64 `json:"tx_bytes"`
+				TxDropped int64 `json:"tx_dropped"`
+				TxErrors  int64 `json:"tx_errors"`
+				TxPackets int64 `json:"tx_packets"`
+			} `json:"eth0"`
+			Eth5 struct {
+				RxBytes   int64 `json:"rx_bytes"`
+				RxDropped int64 `json:"rx_dropped"`
+				RxErrors  int64 `json:"rx_errors"`
+				RxPackets int64 `json:"rx_packets"`
+				TxBytes   int64 `json:"tx_bytes"`
+				TxDropped int64 `json:"tx_dropped"`
+				TxErrors  int64 `json:"tx_errors"`
+				TxPackets int64 `json:"tx_packets"`
+			} `json:"eth5"`
+		} `json:"networks"`
+		PidsStats struct {
+			Current int64 `json:"current"`
+		} `json:"pids_stats"`
+		PrecpuStats struct {
+			CPUUsage struct {
+				PercpuUsage       []int64 `json:"percpu_usage"`
+				TotalUsage        int64   `json:"total_usage"`
+				UsageInKernelmode int64   `json:"usage_in_kernelmode"`
+				UsageInUsermode   int64   `json:"usage_in_usermode"`
+			} `json:"cpu_usage"`
+			OnlineCpus     int64 `json:"online_cpus"`
+			SystemCPUUsage int64 `json:"system_cpu_usage"`
+			ThrottlingData struct {
+				Periods          int64 `json:"periods"`
+				ThrottledPeriods int64 `json:"throttled_periods"`
+				ThrottledTime    int64 `json:"throttled_time"`
+			} `json:"throttling_data"`
+		} `json:"precpu_stats"`
+		Read string `json:"read"`
+	}
+	d := MyJsonName{}
+	json.Unmarshal(b, &d)
+
+	data.Data = d
 	this.Data["json"] = data
 	this.ServeJSON()
 }
