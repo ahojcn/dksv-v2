@@ -324,7 +324,14 @@ func (this *ContainerController) Stat() {
 		Read string `json:"read"`
 	}
 	d := MyJsonName{}
-	json.Unmarshal(b, &d)
+	err = json.Unmarshal(b, &d)
+	if err != nil {
+		data.Status = -1
+		data.Msg = fmt.Sprintf("转换错误:%v", err)
+		this.Data["json"] = data
+		this.ServeJSON()
+		return
+	}
 
 	data.Data = d
 	this.Data["json"] = data
